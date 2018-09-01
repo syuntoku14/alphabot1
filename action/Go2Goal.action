@@ -1,0 +1,8 @@
+# goal
+geometry_msgs/TransformStamped[] goal_position
+---
+# result
+geometry_msgs/TransformStamped[] arrived_position
+---
+# feedback
+geometry_msgs/TransformStamped[] estimated_position

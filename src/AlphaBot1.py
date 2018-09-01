@@ -8,12 +8,10 @@ class AlphaBot1():
     def __init__(self, pi):
         self.wheel = Wheel(pi)
         self.sensor = Sensor(pi)
+        self.current_controller = Controller().Stop()
 
-        # goal
-        self.goal_x = 2.0
-        self.goal_y = 1.0
-
-        self.current_controller = Controller().Go2Goal(self.goal_x, self.goal_y)
+        self.goal_x = 0.0
+        self.goal_y = 0.0
 
         # estimated position
         self.x = 0
@@ -21,6 +19,11 @@ class AlphaBot1():
         self.theta = 0
 
         self.prev_time = time.time()
+
+    def set_go_to_goal(self, goal_x, goal_y):
+        self.goal_x = goal_x
+        self.goal_y = goal_y
+        self.current_controller = Controller().Go2Goal(goal_x, goal_y)
 
     def is_at_goal(self):
         # distance between goal and robot
