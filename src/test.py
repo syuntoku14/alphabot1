@@ -3,20 +3,22 @@
 import AlphaBot1
 import pigpio
 import rospy
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Float64MultiArray
 
 pi = pigpio.pi()
-wheel = AlphaBot1.WheelSetter(pi)
-sensor = AlphaBot1.SensorGetter(pi)
+alphabot1 = AlphaBot1.AlphaBot1(pi)
 
-wheel.set_wheel_speeds(0.6, 0.6)
-rospy.init_node('encoder_publisher')
-pub = rospy.Publisher('encoder', Int32MultiArray, queue_size=1)
+alphabot1.wheel.set_wheel_speeds(0.6, 0.6)
+rospy.init_node('odometry_publisher')
+pub = rospy.Publisher('odometry', Float64MultiArray, queue_size=1)
 
 rate = rospy.Rate(1000)
 while not rospy.is_shutdown():
-    left, right = sensor.ret_encoder_vals()
-    pub.publish(Int32MultiArray(data=[left, right]))
+    alphabot1.update_odometry()
+    estimated_state = [alphabot1.x, alphabot1.y, alphabot1.theta]
+    pub.publish(Float64MultiArray(data=estimated_state))
+    alphabot1.update_odometry()
     rate.sleep()
-wheel.set_wheel_speeds(0, 0)
+
+alphabot1.wheel.set_wheel_speeds(0, 0)
 pi.stop()
