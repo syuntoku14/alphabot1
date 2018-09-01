@@ -8,7 +8,12 @@ class AlphaBot1():
     def __init__(self, pi):
         self.wheel = Wheel(pi)
         self.sensor = Sensor(pi)
-        self.current_cotroller = Controller().Go2Goal(1.0, 1.0)
+
+        # goal
+        self.goal_x = 2.0
+        self.goal_y = 1.0
+
+        self.current_controller = Controller().Go2Goal(self.goal_x, self.goal_y)
 
         # estimated position
         self.x = 0
@@ -16,6 +21,17 @@ class AlphaBot1():
         self.theta = 0
 
         self.prev_time = time.time()
+
+    def is_at_goal(self):
+        # distance between goal and robot
+        x_diff = self.goal_x - self.x
+        y_diff = self.goal_y - self.y
+
+        # angle between robot and goal
+        distance = math.sqrt(x_diff**2 + y_diff**2)
+        at_goal = True if distance < 0.10 else False
+
+        return at_goal
 
     def execute(self):
         now_time = time.time()
@@ -66,7 +82,7 @@ class AlphaBot1():
         self.sensor.encoder_prev_ticks_right = self.sensor.encoder_ticks_right
 
 class Controller():
-    class stop():
+    class Stop():
         def execute(self, x, y, theta, dt):
             v = 0
             w = 0
@@ -90,8 +106,8 @@ class Controller():
         
         def execute(self, x, y, theta, dt):
             # distance between goal and robot
-            x_diff = goal_x - x
-            y_diff = goal_y - y
+            x_diff = self.goal_x - x
+            y_diff = self.goal_y - y
 
             # angle between robot and goal
             distance = math.sqrt(x_diff**2 + y_diff**2)
@@ -106,11 +122,11 @@ class Controller():
             e_D = (e_k - self.e_k_1)/dt
 
             v = self.v
-            w = self.Kp*e_P + self.Ki+e_I + self.Kd*e_d
+            w = self.Kp*e_P + self.Ki+e_I + self.Kd*e_D
+            print(v, w)
             # z = -1.0*abs(w) + 1.0*abs(distance)
             # v = v/(1+exp(-z))
             return v, w
-
 
 class Wheel():
     def __init__(self, pi, left_front=12, left_back=13, right_back=20, right_front=21, enable_left=6, enable_right=26):
@@ -140,6 +156,8 @@ class Wheel():
 
     def vel2duty(self, vel):
         # convert velocity to duty ratio
+        vel = min(1.0, vel)
+        vel = max(0, vel)
         duty = int(255 * vel)  # 255 == duty 1
         return duty
 

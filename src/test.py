@@ -3,18 +3,20 @@
 import AlphaBot1
 import pigpio
 import rospy
-from std_msgs.msg import Float64MultiArray
+import tf
 
 pi = pigpio.pi()
 alphabot1 = AlphaBot1.AlphaBot1(pi)
-
-rospy.init_node('odometry_publisher')
-pub = rospy.Publisher('odometry', Float64MultiArray, queue_size=1)
+rospy.init_node('alphabot_tf_broadcaster')
 
 rate = rospy.Rate(1000)
 while not rospy.is_shutdown():
-    estimated_state = [alphabot1.x, alphabot1.y, alphabot1.theta]
-    pub.publish(Float64MultiArray(data=estimated_state))
+    if alphabot1.is_at_goal():
+        break
+    br = tf.TransformBroadcaster()
+    br.sendTransform((alphabot1.x, alphabot1.y, 0), 
+            tf.transformations.quaternion_from_euler(0, 0, alphabot1.theta),
+            rospy.Time.now(), "alphabot", "world")
     alphabot1.execute()
     rate.sleep()
 
