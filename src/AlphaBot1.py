@@ -1,16 +1,30 @@
 #!/usr/bin/env python
 import pigpio
 import math
+import time
 
 
 class AlphaBot1():
     def __init__(self, pi):
         self.wheel = Wheel(pi)
         self.sensor = Sensor(pi)
+        self.current_cotroller = Controller().Go2Goal(1.0, 1.0)
 
+        # estimated position
         self.x = 0
         self.y = 0
         self.theta = 0
+
+        self.prev_time = time.time()
+
+    def execute(self):
+        now_time = time.time()
+        dt =  now_time - self.prev_time
+        self.prev_time = now_time
+        v, w = self.current_controller.execute(self.x, self.y, self.theta, dt)
+        vel_l, vel_r = self.uni2diff(v, w)
+        self.wheel.set_wheel_speeds(vel_l, vel_r)
+        self.update_odometry()
 
     def uni2diff(self, v, w):
         R = self.wheel.wheel_radius
@@ -50,6 +64,52 @@ class AlphaBot1():
         # save the previous ticks for the next estimate
         self.sensor.encoder_prev_ticks_left = self.sensor.encoder_ticks_left
         self.sensor.encoder_prev_ticks_right = self.sensor.encoder_ticks_right
+
+class Controller():
+    class stop():
+        def execute(self, x, y, theta, dt):
+            v = 0
+            w = 0
+            return v, w
+            
+    class Go2Goal():
+        def __init__(self, goal_x, goal_y, Kp=4, Ki=0.01, Kd=0.01):
+            self.goal_x = goal_x
+            self.goal_y = goal_y
+
+            # PID parameters
+            self.Kp = Kp
+            self.Ki = Ki
+            self.Kd = Kd
+            
+            # errors
+            self.E_k = 0
+            self.e_k_1 = 0
+
+            self.v = 0.5
+        
+        def execute(self, x, y, theta, dt):
+            # distance between goal and robot
+            x_diff = goal_x - x
+            y_diff = goal_y - y
+
+            # angle between robot and goal
+            distance = math.sqrt(x_diff**2 + y_diff**2)
+            goal_theta = math.atan2(y_diff, x_diff)
+
+            # error for PID control
+            e_k = goal_theta - theta
+            e_k = math.atan2(math.sin(e_k), math.cos(e_k))
+
+            e_P = e_k
+            e_I = self.E_k + e_k*dt
+            e_D = (e_k - self.e_k_1)/dt
+
+            v = self.v
+            w = self.Kp*e_P + self.Ki+e_I + self.Kd*e_d
+            # z = -1.0*abs(w) + 1.0*abs(distance)
+            # v = v/(1+exp(-z))
+            return v, w
 
 
 class Wheel():
