@@ -1,0 +1,14 @@
+# goal
+float64 goal_x
+float64 goal_y
+---
+# result
+float64 result_x
+float64 result_y
+float64 result_theta
+---
+# feedback
+float64 estimated_x
+float64 estimated_y
+float64 estimated_theta
+
